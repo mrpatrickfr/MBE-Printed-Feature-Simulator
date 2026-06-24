@@ -391,7 +391,7 @@ function drawSweepCuts(sweep, metric) {
   drawPlotFrame(ctx, { w, h, pad, title: 'Heatmap cuts', xLabel: sweep.yParam ? `${labelForParam(sweep.xParam)} / ${labelForParam(sweep.yParam)}` : labelForParam(sweep.xParam), yLabel: labelForMetric(metric), xValues: sweep.xValues, yValues: [min, max] });
   const hLabel = sweep.yParam ? `${labelForParam(sweep.yParam)}=${format(sweep.yValues[cutYi],4)}` : '1D sweep';
   const vLabel = `${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)}`;
-  if (showH && showV && sweep.yParam) drawLegend(ctx, pad.left + 12, 14, [{ color: '#66e3ff', label: `Horizontal: ${hLabel}` }, { color: '#ffd36b', label: `Vertical: ${vLabel}` }]);
+  if (showH && showV && sweep.yParam) drawLegend(ctx, w - pad.right - 236, pad.top + 12, [{ color: '#66e3ff', label: `Horizontal: ${hLabel}` }, { color: '#ffd36b', label: `Vertical: ${vLabel}` }]);
   else {
     ctx.font = '13px system-ui';
     if (showH) { ctx.fillStyle = '#66e3ff'; ctx.fillText(`Horizontal cut: ${hLabel}`, pad.left + 12, 22); }
@@ -455,14 +455,31 @@ function drawColorbar(ctx, x, y, width, height, min, max, label) {
 function drawLegend(ctx, x, y, items) {
   ctx.save();
   ctx.font = '12px system-ui';
-  const width = Math.max(...items.map(item => ctx.measureText(item.label).width)) + 42;
-  const height = 12 + items.length * 20;
-  ctx.fillStyle = 'rgba(7,16,29,.82)'; ctx.strokeStyle = 'rgba(255,255,255,.22)';
-  ctx.fillRect(x, y, width, height); ctx.strokeRect(x, y, width, height);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const paddingX = 10, paddingY = 8, rowHeight = 20, handleWidth = 24;
+  const textWidth = Math.max(...items.map(item => ctx.measureText(item.label).width));
+  const width = paddingX * 3 + handleWidth + textWidth;
+  const height = paddingY * 2 + items.length * rowHeight;
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.strokeStyle = 'rgba(0,0,0,.82)';
+  ctx.lineWidth = 1;
+  ctx.fillRect(x, y, width, height);
+  ctx.strokeRect(x, y, width, height);
   items.forEach((item, i) => {
-    const yy = y + 17 + i * 20;
-    ctx.strokeStyle = item.color; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 10, yy); ctx.lineTo(x + 30, yy); ctx.stroke();
-    ctx.fillStyle = '#eef6ff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(item.label, x + 36, yy);
+    const yy = y + paddingY + rowHeight * (i + 0.5);
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + paddingX, yy);
+    ctx.lineTo(x + paddingX + handleWidth, yy);
+    ctx.stroke();
+    ctx.fillStyle = item.color;
+    ctx.beginPath();
+    ctx.arc(x + paddingX + handleWidth / 2, yy, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.fillText(item.label, x + paddingX * 2 + handleWidth, yy);
   });
   ctx.restore();
 }
