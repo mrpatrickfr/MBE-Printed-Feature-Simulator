@@ -46,7 +46,7 @@
           <h2>Simulated deposited morphology</h2>
           <p>Height map and centerline profile are normalized to peak thickness.</p>
         </div>
-        <div class="actions"><button id="exportBtn" type="button">Export profile CSV</button><button id="exportFitBtn" type="button">Export fitted parameters</button></div>
+        <div class="actions"><button id="exportBtn" type="button">Export profile CSV</button><button id="exportFitBtn" type="button">Export fitted parameters</button><button id="exportMorphologyPlotBtn" type="button">Export morphology PNG</button><button id="exportProfilePlotBtn" type="button">Export profile PNG</button></div>
       </div>
       <canvas id="morphology" width="760" height="430" aria-label="Simulated morphology heatmap"></canvas>
       <div class="chart-wrap">
@@ -81,8 +81,12 @@
           <legend>Plot after sweep</legend>
           <div class="sweep-controls plot-controls">
             <label>Heat / plot value<select id="sweepMetric"></select></label>
+            <label class="check-row"><input id="showHorizontalCut" type="checkbox" checked /> Show horizontal cut</label>
             <label>Horizontal cut Y<select id="cutYSelect"></select></label>
+            <label class="check-row"><input id="showVerticalCut" type="checkbox" checked /> Show vertical cut</label>
             <label>Vertical cut X<select id="cutXSelect"></select></label>
+            <button id="exportSweepPlotBtn" type="button">Export heat/line PNG</button>
+            <button id="exportCutPlotBtn" type="button">Export cuts PNG</button>
           </div>
         </fieldset>
       </div>

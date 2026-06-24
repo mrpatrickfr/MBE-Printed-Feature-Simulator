@@ -103,28 +103,37 @@ function metrics(profile) {
 function drawMorphology(profile) {
   const c = document.getElementById('morphology'), ctx = c.getContext('2d'), w = c.width, h = c.height;
   ctx.clearRect(0,0,w,h);
-  const img = ctx.createImageData(w,h), maxR = Math.min(w,h)*0.43;
-  for (let y=0; y<h; y++) for (let x=0; x<w; x++) {
-    const dx=(x-w/2)/maxR, dy=(y-h/2)/maxR;
-    const rUm = Math.hypot(dx,dy) * Math.max(state.maskDiameter, 30);
-    const val = radialValue(rUm, profile.sigma, state.maskDiameter/2);
-    const i=(y*w+x)*4; img.data[i]=20+235*val; img.data[i+1]=45+150*Math.sqrt(val); img.data[i+2]=80+110*(1-val); img.data[i+3]=255;
+  const pad = { left: 72, right: 96, top: 50, bottom: 58 };
+  const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
+  const img = ctx.createImageData(plotW, plotH);
+  const spanUm = Math.max(state.maskDiameter * 1.8, state.maskDiameter + 10 * profile.sigma, 30);
+  for (let y=0; y<plotH; y++) for (let x=0; x<plotW; x++) {
+    const xUm = (x / (plotW - 1) - 0.5) * spanUm;
+    const yUm = (0.5 - y / (plotH - 1)) * spanUm;
+    const val = radialValue(Math.hypot(xUm, yUm), profile.sigma, state.maskDiameter/2);
+    const i=(y*plotW+x)*4; img.data[i]=20+235*val; img.data[i+1]=45+150*Math.sqrt(val); img.data[i+2]=80+110*(1-val); img.data[i+3]=255;
   }
-  ctx.putImageData(img,0,0);
-  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.setLineDash([6,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(w/2,h/2,maxR*0.5,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle='white'; ctx.font='16px system-ui'; ctx.fillText('Dashed ring: nominal mask aperture', 22, 32);
+  ctx.putImageData(img, pad.left, pad.top);
+  ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.setLineDash([6,6]); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(pad.left + plotW/2, pad.top + plotH/2, (state.maskDiameter / spanUm) * plotW / 2, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  drawPlotFrame(ctx, { w, h, pad, title: 'Simulated morphology', xLabel: 'x position (µm)', yLabel: 'y position (µm)', xValues: [-spanUm/2, spanUm/2], yValues: [-spanUm/2, spanUm/2] });
+  drawColorbar(ctx, w - 88, pad.top, 16, plotH, 0, 1, 'Normalized thickness');
+  ctx.fillStyle='rgba(255,255,255,.82)'; ctx.font='12px system-ui'; ctx.textAlign='left'; ctx.fillText('Dashed circle: nominal aperture', pad.left + 10, pad.top + 20);
 }
 function radialValue(r, sigma, radius) { return Math.max(0, Math.min(1, 0.5*(1-erf((r-radius)/(Math.SQRT2*sigma))))); }
 
 function drawProfile(profile) {
-  const c = document.getElementById('profile'), ctx = c.getContext('2d'), w = c.width, h = c.height, pad=42;
-  ctx.clearRect(0,0,w,h); ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){ const y=pad+(h-2*pad)*i/4; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke(); }
-  const xmin=profile.xs[0], xmax=profile.xs.at(-1);
-  ctx.strokeStyle='#66e3ff'; ctx.lineWidth=3; ctx.beginPath();
-  profile.xs.forEach((x,i)=>{ const px=pad+(x-xmin)/(xmax-xmin)*(w-2*pad), py=h-pad-profile.ys[i]*(h-2*pad); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }); ctx.stroke();
-  ctx.fillStyle='#dceeff'; ctx.font='14px system-ui'; ctx.fillText('centerline height profile', pad, 22); ctx.fillText('position (µm)', w/2-40, h-10); ctx.save(); ctx.translate(14,h/2+35); ctx.rotate(-Math.PI/2); ctx.fillText('normalized thickness',0,0); ctx.restore();
+  const c = document.getElementById('profile'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const pad = { left: 72, right: 28, top: 42, bottom: 54 };
+  ctx.clearRect(0,0,w,h);
+  drawLineSeries(ctx, profile.xs, profile.ys, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, 0, 1, '#66e3ff');
+  drawPlotFrame(ctx, { w, h, pad, title: 'Centerline height profile', xLabel: 'position (µm)', yLabel: 'normalized thickness', xValues: profile.xs, yValues: [0, 1] });
+  ctx.strokeStyle='rgba(255,211,107,.85)'; ctx.lineWidth=1.5; ctx.setLineDash([5,5]);
+  const y50 = pad.top + (h - pad.top - pad.bottom) * 0.5;
+  ctx.beginPath(); ctx.moveTo(pad.left, y50); ctx.lineTo(w-pad.right, y50); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#ffd36b'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText('50% FWHM reference', w - pad.right - 8, y50 - 6);
 }
+
 
 function fittedParameters(profile, metricValues) {
   const p = presets[state.material];
@@ -162,6 +171,15 @@ function downloadText(filename, text, type) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function exportCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename;
+  a.click();
 }
 
 function simulate() {
@@ -215,6 +233,12 @@ function buildSweepControls() {
   document.getElementById('sweepMetric').addEventListener('change', () => { if (window.currentSweep) renderSweep(); });
   document.getElementById('cutXSelect').addEventListener('change', () => { if (window.currentSweep) renderSweep(); });
   document.getElementById('cutYSelect').addEventListener('change', () => { if (window.currentSweep) renderSweep(); });
+  document.getElementById('showHorizontalCut').addEventListener('change', () => { if (window.currentSweep) renderSweep(); });
+  document.getElementById('showVerticalCut').addEventListener('change', () => { if (window.currentSweep) renderSweep(); });
+  document.getElementById('exportSweepPlotBtn').addEventListener('click', () => exportCanvas('sweepHeatmap', 'mini-mbe-sweep-plot.png'));
+  document.getElementById('exportCutPlotBtn').addEventListener('click', () => exportCanvas('sweepCuts', 'mini-mbe-sweep-cuts.png'));
+  document.getElementById('exportMorphologyPlotBtn').addEventListener('click', () => exportCanvas('morphology', 'mini-mbe-morphology.png'));
+  document.getElementById('exportProfilePlotBtn').addEventListener('click', () => exportCanvas('profile', 'mini-mbe-profile-plot.png'));
 }
 
 function setSweepDefaults(axis) {
@@ -332,9 +356,12 @@ function drawSweepHeatmap(sweep, metric) {
     ctx.fillRect(x, y, Math.ceil(plotW / nx) + 1, Math.ceil(plotH / ny) + 1);
   }
   const cutXi = Number(document.getElementById('cutXSelect').value), cutYi = Number(document.getElementById('cutYSelect').value);
+  const showH = document.getElementById('showHorizontalCut').checked;
+  const showV = document.getElementById('showVerticalCut').checked;
   ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
-  const vx = pad.left + (cutXi + .5) * plotW / nx; ctx.beginPath(); ctx.moveTo(vx, pad.top); ctx.lineTo(vx, h-pad.bottom); ctx.stroke();
-  const hy = pad.top + (ny - cutYi - .5) * plotH / ny; ctx.beginPath(); ctx.moveTo(pad.left, hy); ctx.lineTo(w-pad.right, hy); ctx.stroke(); ctx.setLineDash([]);
+  if (showV) { const vx = pad.left + (cutXi + .5) * plotW / nx; ctx.beginPath(); ctx.moveTo(vx, pad.top); ctx.lineTo(vx, h-pad.bottom); ctx.stroke(); }
+  if (showH) { const hy = pad.top + (ny - cutYi - .5) * plotH / ny; ctx.beginPath(); ctx.moveTo(pad.left, hy); ctx.lineTo(w-pad.right, hy); ctx.stroke(); }
+  ctx.setLineDash([]);
   drawPlotFrame(ctx, { w, h, pad, title: `${labelForMetric(metric)} sweep`, xLabel: labelForParam(sweep.xParam), yLabel: labelForParam(sweep.yParam), xValues: sweep.xValues, yValues: sweep.yValues });
   drawColorbar(ctx, w - 78, pad.top, 18, plotH, min, max, labelForMetric(metric));
 }
@@ -354,16 +381,23 @@ function drawSweepCuts(sweep, metric) {
   const pad = { left: 82, right: 36, top: 42, bottom: 56 };
   ctx.clearRect(0,0,w,h);
   const cutXi = Number(document.getElementById('cutXSelect').value), cutYi = Number(document.getElementById('cutYSelect').value);
-  const horizontal = sweep.xValues.map((_, xi) => sweepValueAt(xi, sweep.yParam ? cutYi : 0, metric));
-  const vertical = sweep.yParam ? sweep.yValues.map((_, yi) => sweepValueAt(cutXi, yi, metric)) : [];
-  const all = horizontal.concat(vertical); const { min, max } = metricRange(all);
-  drawLineSeries(ctx, sweep.xValues, horizontal, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#66e3ff');
-  if (sweep.yParam) drawLineSeries(ctx, sweep.yValues, vertical, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#ffd36b');
+  const showH = document.getElementById('showHorizontalCut').checked;
+  const showV = document.getElementById('showVerticalCut').checked;
+  const horizontal = showH ? sweep.xValues.map((_, xi) => sweepValueAt(xi, sweep.yParam ? cutYi : 0, metric)) : [];
+  const vertical = showV && sweep.yParam ? sweep.yValues.map((_, yi) => sweepValueAt(cutXi, yi, metric)) : [];
+  const all = horizontal.concat(vertical); const { min, max } = metricRange(all.length ? all : [0, 1]);
+  if (showH) drawLineSeries(ctx, sweep.xValues, horizontal, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#66e3ff');
+  if (showV && sweep.yParam) drawLineSeries(ctx, sweep.yValues, vertical, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#ffd36b');
   drawPlotFrame(ctx, { w, h, pad, title: 'Heatmap cuts', xLabel: sweep.yParam ? `${labelForParam(sweep.xParam)} / ${labelForParam(sweep.yParam)}` : labelForParam(sweep.xParam), yLabel: labelForMetric(metric), xValues: sweep.xValues, yValues: [min, max] });
-  ctx.fillStyle = '#dceeff'; ctx.font = '13px system-ui';
   const hLabel = sweep.yParam ? `${labelForParam(sweep.yParam)}=${format(sweep.yValues[cutYi],4)}` : '1D sweep';
-  ctx.fillStyle = '#66e3ff'; ctx.fillText(`Horizontal cut: ${hLabel}`, pad.left + 12, 22);
-  if (sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(`Vertical cut: ${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)}`, pad.left + 260, 22); }
+  const vLabel = `${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)}`;
+  if (showH && showV && sweep.yParam) drawLegend(ctx, pad.left + 12, 14, [{ color: '#66e3ff', label: `Horizontal: ${hLabel}` }, { color: '#ffd36b', label: `Vertical: ${vLabel}` }]);
+  else {
+    ctx.font = '13px system-ui';
+    if (showH) { ctx.fillStyle = '#66e3ff'; ctx.fillText(`Horizontal cut: ${hLabel}`, pad.left + 12, 22); }
+    if (showV && sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(`Vertical cut: ${vLabel}`, pad.left + 260, 22); }
+    if (!showH && !(showV && sweep.yParam)) { ctx.fillStyle = '#9fb4ca'; ctx.fillText('Select a cut checkbox to display a cut.', pad.left + 12, 22); }
+  }
 }
 
 function drawLineSeries(ctx, xs, ys, x0, y0, width, height, minY, maxY, color) {
@@ -399,7 +433,7 @@ function drawPlotFrame(ctx, cfg) {
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
     const tick = interpolateTick(yValues, 1 - i / 4); ctx.fillText(format(tick, 4), pad.left - 10, y);
   }
-  ctx.fillStyle = '#eef6ff'; ctx.font = '700 15px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(title, pad.left, 28);
+  ctx.fillStyle = '#eef6ff'; ctx.font = '700 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(title, pad.left + plotW / 2, 28);
   ctx.font = '13px system-ui'; ctx.textAlign = 'center'; ctx.fillText(xLabel, pad.left + plotW / 2, h - 18);
   ctx.save(); ctx.translate(20, pad.top + plotH / 2); ctx.rotate(-Math.PI/2); ctx.fillText(yLabel, 0, 0); ctx.restore();
   ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
@@ -416,6 +450,21 @@ function drawColorbar(ctx, x, y, width, height, min, max, label) {
     ctx.fillText(format(val, 3), x + width + 8, yy);
   }
   ctx.save(); ctx.translate(x + width + 54, y + height / 2); ctx.rotate(-Math.PI/2); ctx.textAlign = 'center'; ctx.fillText(label, 0, 0); ctx.restore();
+}
+
+function drawLegend(ctx, x, y, items) {
+  ctx.save();
+  ctx.font = '12px system-ui';
+  const width = Math.max(...items.map(item => ctx.measureText(item.label).width)) + 42;
+  const height = 12 + items.length * 20;
+  ctx.fillStyle = 'rgba(7,16,29,.82)'; ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.fillRect(x, y, width, height); ctx.strokeRect(x, y, width, height);
+  items.forEach((item, i) => {
+    const yy = y + 17 + i * 20;
+    ctx.strokeStyle = item.color; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 10, yy); ctx.lineTo(x + 30, yy); ctx.stroke();
+    ctx.fillStyle = '#eef6ff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(item.label, x + 36, yy);
+  });
+  ctx.restore();
 }
 
 function interpolateTick(values, fraction) {

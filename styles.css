@@ -64,8 +64,14 @@ article strong { display: block; margin-top: 8px; font-size: 1.45rem; color: var
 .sweep-group legend { padding: 0 8px; color: var(--accent); font-weight: 900; letter-spacing: .02em; }
 .sweep-controls { display: grid; grid-template-columns: repeat(4, minmax(110px, 1fr)); gap: 12px; }
 .plot-controls { grid-template-columns: 1fr; }
+.plot-controls button { width: 100%; }
+.check-row { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 8px !important; color: var(--text) !important; }
+.check-row input { width: auto !important; accent-color: var(--accent); }
 .sweep-controls label { display: grid; gap: 6px; color: var(--muted); font-size: .86rem; font-weight: 700; }
 .sweep-controls input, .sweep-controls select { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-strong); color: var(--text); padding: 9px 10px; font: inherit; }
 .sweep-status { color: var(--muted); margin: 0 0 12px; }
 @media (max-width: 1000px) { .sweep-panel { grid-column: auto; } .sweep-sections { grid-template-columns: 1fr; } .sweep-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plot-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .sweep-controls, .plot-controls { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .sweep-controls, .plot-controls { grid-template-columns: 1fr; }
+.plot-controls button { width: 100%; }
+.check-row { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 8px !important; color: var(--text) !important; }
+.check-row input { width: auto !important; accent-color: var(--accent); } }
