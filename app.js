@@ -388,14 +388,19 @@ function drawSweepCuts(sweep, metric) {
   const all = horizontal.concat(vertical); const { min, max } = metricRange(all.length ? all : [0, 1]);
   if (showH) drawLineSeries(ctx, sweep.xValues, horizontal, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#66e3ff');
   if (showV && sweep.yParam) drawLineSeries(ctx, sweep.yValues, vertical, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#ffd36b');
-  drawPlotFrame(ctx, { w, h, pad, title: 'Heatmap cuts', xLabel: sweep.yParam ? `${labelForParam(sweep.xParam)} / ${labelForParam(sweep.yParam)}` : labelForParam(sweep.xParam), yLabel: labelForMetric(metric), xValues: sweep.xValues, yValues: [min, max] });
-  const hLabel = sweep.yParam ? `${labelForParam(sweep.yParam)}=${format(sweep.yValues[cutYi],4)}` : '1D sweep';
-  const vLabel = `${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)}`;
-  if (showH && showV && sweep.yParam) drawLegend(ctx, w - pad.right - 236, pad.top + 12, [{ color: '#66e3ff', label: `Horizontal: ${hLabel}` }, { color: '#ffd36b', label: `Vertical: ${vLabel}` }]);
+  const hLabel = sweep.yParam ? `${labelForParam(sweep.yParam)} = ${format(sweep.yValues[cutYi],4)}` : '1D sweep';
+  const vLabel = `${labelForParam(sweep.xParam)} = ${format(sweep.xValues[cutXi],4)}`;
+  const onlyH = showH && !(showV && sweep.yParam);
+  const onlyV = !showH && showV && sweep.yParam;
+  const title = onlyH ? hLabel : onlyV ? vLabel : 'Heatmap cuts';
+  const xLabel = onlyV ? labelForParam(sweep.yParam) : onlyH ? labelForParam(sweep.xParam) : sweep.yParam ? `${labelForParam(sweep.xParam)} / ${labelForParam(sweep.yParam)}` : labelForParam(sweep.xParam);
+  const xValues = onlyV ? sweep.yValues : sweep.xValues;
+  drawPlotFrame(ctx, { w, h, pad, title, xLabel, yLabel: labelForMetric(metric), xValues, yValues: [min, max] });
+  if (showH && showV && sweep.yParam) drawLegend(ctx, w - pad.right - 236, pad.top + 12, [{ color: '#66e3ff', label: hLabel }, { color: '#ffd36b', label: vLabel }]);
   else {
     ctx.font = '13px system-ui';
-    if (showH) { ctx.fillStyle = '#66e3ff'; ctx.fillText(`Horizontal cut: ${hLabel}`, pad.left + 12, 22); }
-    if (showV && sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(`Vertical cut: ${vLabel}`, pad.left + 260, 22); }
+    if (showH) { ctx.fillStyle = '#66e3ff'; ctx.fillText(hLabel, pad.left + 12, 22); }
+    if (showV && sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(vLabel, pad.left + 260, 22); }
     if (!showH && !(showV && sweep.yParam)) { ctx.fillStyle = '#9fb4ca'; ctx.fillText('Select a cut checkbox to display a cut.', pad.left + 12, 22); }
   }
 }
