@@ -25,16 +25,28 @@ const controlsEl = document.getElementById('controls');
 function buildControls() {
   controlsEl.innerHTML = `<div class="control"><label for="material">Substrate material</label><small>Preset Arrhenius parameters for Al adatom mobility.</small><select id="material">${Object.entries(presets).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></div>`;
   for (const [key, label, unit, min, max, step, help] of controls) {
-    controlsEl.insertAdjacentHTML('beforeend', `<div class="control"><label for="${key}"><span>${label}</span><output id="${key}Out"></output></label><small>${help}</small><input id="${key}" type="range" min="${min}" max="${max}" step="${step}" /></div>`);
+    controlsEl.insertAdjacentHTML('beforeend', `<div class="control"><label for="${key}"><span>${label}</span><output id="${key}Out"></output></label><small>${help}</small><div class="input-row"><input id="${key}" type="range" min="${min}" max="${max}" step="${step}" /><input id="${key}Number" type="number" min="${min}" max="${max}" step="${step}" aria-label="${label} numeric value" /></div></div>`);
   }
   document.getElementById('material').addEventListener('change', e => { state.material = e.target.value; simulate(); });
-  for (const [key] of controls) document.getElementById(key).addEventListener('input', e => { state[key] = Number(e.target.value); simulate(); });
+  for (const [key,,,,,step] of controls) {
+    document.getElementById(key).addEventListener('input', e => { state[key] = Number(e.target.value); simulate(); });
+    document.getElementById(`${key}Number`).addEventListener('input', e => {
+      if (e.target.value === '') return;
+      state[key] = normalizeInputValue(key, Number(e.target.value));
+      simulate();
+    });
+    document.getElementById(`${key}Number`).addEventListener('change', e => {
+      state[key] = normalizeInputValue(key, Number(e.target.value || state[key]), step);
+      simulate();
+    });
+  }
 }
 
 function syncControls() {
   document.getElementById('material').value = state.material;
   for (const [key,,unit] of controls) {
     document.getElementById(key).value = state[key];
+    if (document.activeElement !== document.getElementById(`${key}Number`)) document.getElementById(`${key}Number`).value = state[key];
     document.getElementById(`${key}Out`).textContent = `${format(state[key], 3)} ${unit}`.trim();
   }
 }
@@ -106,11 +118,49 @@ function drawProfile(profile) {
   ctx.fillStyle='#dceeff'; ctx.font='14px system-ui'; ctx.fillText('centerline height profile', pad, 22); ctx.fillText('position (µm)', w/2-40, h-10); ctx.save(); ctx.translate(14,h/2+35); ctx.rotate(-Math.PI/2); ctx.fillText('normalized thickness',0,0); ctx.restore();
 }
 
+function fittedParameters(profile, metricValues) {
+  const p = presets[state.material];
+  return {
+    exportedAt: new Date().toISOString(),
+    substrateMaterial: p.label,
+    inputs: { ...state },
+    modelParameters: { diffusionPrefactorM2PerS: p.d0, activationEnergyEV: p.ea, residenceScale: p.tau },
+    fittedOutputs: {
+      fwhmLinewidthUm: metricValues.fwhm,
+      edgeWidth10To90Um: metricValues.edge,
+      geometricSigmaUm: profile.geomSigma,
+      diffusionSigmaUm: profile.diffSigma,
+      totalSigmaUm: profile.sigma,
+      diffusionCoefficientM2PerS: profile.D,
+      dominantBlur: dominantBlur(profile)
+    }
+  };
+}
+
+function dominantBlur(profile) {
+  return profile.geomSigma > profile.diffSigma * 1.15 ? 'Geometry' : profile.diffSigma > profile.geomSigma * 1.15 ? 'Diffusion' : 'Mixed';
+}
+
+function normalizeInputValue(key, value) {
+  const spec = controls.find(([controlKey]) => controlKey === key);
+  if (!spec || !Number.isFinite(value)) return state[key];
+  const [, , , min, max] = spec;
+  return Math.min(max, Math.max(min, value));
+}
+
+function downloadText(filename, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function simulate() {
   syncControls();
   const p = simulateProfile(), m = metrics(p);
   drawMorphology(p); drawProfile(p);
-  const dominant = p.geomSigma > p.diffSigma * 1.15 ? 'Geometry' : p.diffSigma > p.geomSigma * 1.15 ? 'Diffusion' : 'Mixed';
+  const dominant = dominantBlur(p);
   document.getElementById('dominantBlur').textContent = dominant;
   document.getElementById('dominantNote').textContent = dominant === 'Geometry' ? 'Reduce mask-substrate gap or source diameter' : dominant === 'Diffusion' ? 'Lower substrate temperature or residence time' : 'Both effects are comparable';
   document.getElementById('fwhm').textContent = `${format(m.fwhm,3)} µm`;
@@ -120,6 +170,7 @@ function simulate() {
   document.getElementById('totalSigma').textContent = `${format(p.sigma,3)} µm`;
   document.getElementById('diffCoeff').textContent = `${p.D.toExponential(2)} m²/s`;
   window.currentProfile = p;
+  window.currentMetrics = m;
 }
 
 function erf(x) { const s=Math.sign(x); x=Math.abs(x); const a1=.254829592,a2=-.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=.3275911; const t=1/(1+p*x); return s*(1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x)); }
@@ -129,7 +180,11 @@ document.getElementById('resetBtn').addEventListener('click', () => { state = { 
 document.getElementById('exportBtn').addEventListener('click', () => {
   const p = window.currentProfile; if (!p) return;
   const csv = 'x_um,normalized_thickness\n' + p.xs.map((x,i)=>`${x},${p.ys[i]}`).join('\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'mini-mbe-profile.csv'; a.click(); URL.revokeObjectURL(a.href);
+  downloadText('mini-mbe-profile.csv', csv, 'text/csv');
+});
+document.getElementById('exportFitBtn').addEventListener('click', () => {
+  const p = window.currentProfile, m = window.currentMetrics; if (!p || !m) return;
+  downloadText('mini-mbe-fitted-parameters.json', JSON.stringify(fittedParameters(p, m), null, 2), 'application/json');
 });
 
 buildControls(); simulate();

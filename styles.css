@@ -33,12 +33,15 @@ h1 { font-size: clamp(2.2rem, 6vw, 5rem); line-height: .95; margin: 0; max-width
 .controls { grid-row: span 2; }
 .panel-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 18px; }
 h2 { margin: 0; font-size: 1.25rem; }
-button { border: 0; color: #07101d; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius: 999px; padding: 10px 14px; font-weight: 800; cursor: pointer; }
+button { border: 0; color: #07101d; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius: 999px; padding: 10px 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .control { padding: 14px 0; border-top: 1px solid var(--line); }
 .control label { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
 .control small { color: var(--muted); display: block; margin: 5px 0 10px; }
 .control output { color: var(--accent); font-variant-numeric: tabular-nums; }
+.input-row { display: grid; grid-template-columns: 1fr 104px; gap: 10px; align-items: center; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=number] { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-strong); color: var(--text); padding: 9px 10px; font: inherit; font-variant-numeric: tabular-nums; }
 select { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-strong); color: var(--text); padding: 10px; }
 details { margin-top: 18px; color: var(--muted); }
 summary { color: var(--text); cursor: pointer; font-weight: 800; }
