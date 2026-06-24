@@ -399,9 +399,10 @@ function drawSweepCuts(sweep, metric) {
   if (showH && showV && sweep.yParam) drawLegend(ctx, w - pad.right - 236, pad.top + 12, [{ color: '#66e3ff', label: hLabel }, { color: '#ffd36b', label: vLabel }]);
   else {
     ctx.font = '13px system-ui';
-    if (showH) { ctx.fillStyle = '#66e3ff'; ctx.fillText(hLabel, pad.left + 12, 22); }
-    if (showV && sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(vLabel, pad.left + 260, 22); }
-    if (!showH && !(showV && sweep.yParam)) { ctx.fillStyle = '#9fb4ca'; ctx.fillText('Select a cut checkbox to display a cut.', pad.left + 12, 22); }
+    if (!onlyH && !onlyV && !showH && !(showV && sweep.yParam)) {
+      ctx.fillStyle = '#9fb4ca';
+      ctx.fillText('Select a cut checkbox to display a cut.', pad.left + 12, 22);
+    }
   }
 }
 
