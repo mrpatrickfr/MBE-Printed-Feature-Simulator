@@ -63,18 +63,28 @@
         </div>
         <div class="actions"><button id="runSweepBtn" type="button">Run sweep</button><button id="exportSweepBtn" type="button">Export sweep CSV</button></div>
       </div>
-      <div class="sweep-controls">
-        <label>Sweep X parameter<select id="sweepXParam"></select></label>
-        <label>Start<input id="sweepXStart" type="number" step="any" /></label>
-        <label>Stop<input id="sweepXStop" type="number" step="any" /></label>
-        <label>Step<input id="sweepXStep" type="number" step="any" min="0" /></label>
-        <label>Sweep Y parameter<select id="sweepYParam"><option value="">None — 1D sweep</option></select></label>
-        <label>Start<input id="sweepYStart" type="number" step="any" /></label>
-        <label>Stop<input id="sweepYStop" type="number" step="any" /></label>
-        <label>Step<input id="sweepYStep" type="number" step="any" min="0" /></label>
-        <label>Heat / plot value<select id="sweepMetric"></select></label>
-        <label>Horizontal cut Y<select id="cutYSelect"></select></label>
-        <label>Vertical cut X<select id="cutXSelect"></select></label>
+      <div class="sweep-sections">
+        <fieldset class="sweep-group">
+          <legend>Sweep inputs</legend>
+          <div class="sweep-controls sweep-inputs">
+            <label>Sweep X parameter<select id="sweepXParam"></select></label>
+            <label>Start<input id="sweepXStart" type="number" step="any" /></label>
+            <label>Stop<input id="sweepXStop" type="number" step="any" /></label>
+            <label>Step<input id="sweepXStep" type="number" step="any" min="0" /></label>
+            <label>Sweep Y parameter<select id="sweepYParam"><option value="">None — 1D sweep</option></select></label>
+            <label>Start<input id="sweepYStart" type="number" step="any" /></label>
+            <label>Stop<input id="sweepYStop" type="number" step="any" /></label>
+            <label>Step<input id="sweepYStep" type="number" step="any" min="0" /></label>
+          </div>
+        </fieldset>
+        <fieldset class="sweep-group plot-group">
+          <legend>Plot after sweep</legend>
+          <div class="sweep-controls plot-controls">
+            <label>Heat / plot value<select id="sweepMetric"></select></label>
+            <label>Horizontal cut Y<select id="cutYSelect"></select></label>
+            <label>Vertical cut X<select id="cutXSelect"></select></label>
+          </div>
+        </fieldset>
       </div>
       <p id="sweepStatus" class="sweep-status">Run a sweep to generate plotted results.</p>
       <canvas id="sweepHeatmap" width="760" height="390" aria-label="Sweep heatmap or 1D sweep plot"></canvas>

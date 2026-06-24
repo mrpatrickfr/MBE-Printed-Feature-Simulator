@@ -319,50 +319,55 @@ function colorFor(value, min, max) {
 }
 
 function drawSweepHeatmap(sweep, metric) {
-  const c = document.getElementById('sweepHeatmap'), ctx = c.getContext('2d'), w = c.width, h = c.height, pad = 58;
+  const c = document.getElementById('sweepHeatmap'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const pad = { left: 82, right: 116, top: 52, bottom: 72 };
   ctx.clearRect(0,0,w,h);
   const vals = sweep.rows.map(r => r[metric]);
   const { min, max } = metricRange(vals);
   const nx = sweep.xValues.length, ny = sweep.yValues.length;
-  const plotW = w - 2 * pad, plotH = h - 2 * pad;
+  const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
   for (let yi = 0; yi < ny; yi++) for (let xi = 0; xi < nx; xi++) {
     ctx.fillStyle = colorFor(sweepValueAt(xi, yi, metric), min, max);
-    const x = pad + xi * plotW / nx, y = pad + (ny - 1 - yi) * plotH / ny;
+    const x = pad.left + xi * plotW / nx, y = pad.top + (ny - 1 - yi) * plotH / ny;
     ctx.fillRect(x, y, Math.ceil(plotW / nx) + 1, Math.ceil(plotH / ny) + 1);
   }
   const cutXi = Number(document.getElementById('cutXSelect').value), cutYi = Number(document.getElementById('cutYSelect').value);
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
-  const vx = pad + (cutXi + .5) * plotW / nx; ctx.beginPath(); ctx.moveTo(vx, pad); ctx.lineTo(vx, h-pad); ctx.stroke();
-  const hy = pad + (ny - cutYi - .5) * plotH / ny; ctx.beginPath(); ctx.moveTo(pad, hy); ctx.lineTo(w-pad, hy); ctx.stroke(); ctx.setLineDash([]);
-  drawSweepAxes(ctx, c, labelForParam(sweep.xParam), labelForParam(sweep.yParam), `${labelForMetric(metric)}: ${format(min,4)} to ${format(max,4)}`);
+  ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+  const vx = pad.left + (cutXi + .5) * plotW / nx; ctx.beginPath(); ctx.moveTo(vx, pad.top); ctx.lineTo(vx, h-pad.bottom); ctx.stroke();
+  const hy = pad.top + (ny - cutYi - .5) * plotH / ny; ctx.beginPath(); ctx.moveTo(pad.left, hy); ctx.lineTo(w-pad.right, hy); ctx.stroke(); ctx.setLineDash([]);
+  drawPlotFrame(ctx, { w, h, pad, title: `${labelForMetric(metric)} sweep`, xLabel: labelForParam(sweep.xParam), yLabel: labelForParam(sweep.yParam), xValues: sweep.xValues, yValues: sweep.yValues });
+  drawColorbar(ctx, w - 78, pad.top, 18, plotH, min, max, labelForMetric(metric));
 }
 
 function drawSweepLine(sweep, metric) {
-  const c = document.getElementById('sweepHeatmap'), ctx = c.getContext('2d'), w = c.width, h = c.height, pad = 58;
+  const c = document.getElementById('sweepHeatmap'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const pad = { left: 82, right: 38, top: 52, bottom: 72 };
   ctx.clearRect(0,0,w,h);
   const vals = sweep.rows.map(r => r[metric]);
   const { min, max } = metricRange(vals);
-  drawLineSeries(ctx, sweep.xValues, vals, pad, pad, w - 2*pad, h - 2*pad, min, max, '#66e3ff');
-  drawSweepAxes(ctx, c, labelForParam(sweep.xParam), labelForMetric(metric), '1D sweep result');
+  drawLineSeries(ctx, sweep.xValues, vals, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#66e3ff');
+  drawPlotFrame(ctx, { w, h, pad, title: '1D sweep result', xLabel: labelForParam(sweep.xParam), yLabel: labelForMetric(metric), xValues: sweep.xValues, yValues: [min, max] });
 }
 
 function drawSweepCuts(sweep, metric) {
-  const c = document.getElementById('sweepCuts'), ctx = c.getContext('2d'), w = c.width, h = c.height, pad = 46;
+  const c = document.getElementById('sweepCuts'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const pad = { left: 82, right: 36, top: 42, bottom: 56 };
   ctx.clearRect(0,0,w,h);
   const cutXi = Number(document.getElementById('cutXSelect').value), cutYi = Number(document.getElementById('cutYSelect').value);
   const horizontal = sweep.xValues.map((_, xi) => sweepValueAt(xi, sweep.yParam ? cutYi : 0, metric));
   const vertical = sweep.yParam ? sweep.yValues.map((_, yi) => sweepValueAt(cutXi, yi, metric)) : [];
   const all = horizontal.concat(vertical); const { min, max } = metricRange(all);
-  drawLineSeries(ctx, sweep.xValues, horizontal, pad, pad, w - 2*pad, h - 2*pad, min, max, '#66e3ff');
-  if (sweep.yParam) drawLineSeries(ctx, sweep.yValues, vertical, pad, pad, w - 2*pad, h - 2*pad, min, max, '#ffd36b');
-  ctx.fillStyle = '#dceeff'; ctx.font = '14px system-ui';
-  ctx.fillText(`Cut plot: horizontal ${sweep.yParam ? labelForParam(sweep.yParam)+'='+format(sweep.yValues[cutYi],4) : '1D'} (cyan)` + (sweep.yParam ? `, vertical ${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)} (gold)` : ''), pad, 22);
+  drawLineSeries(ctx, sweep.xValues, horizontal, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#66e3ff');
+  if (sweep.yParam) drawLineSeries(ctx, sweep.yValues, vertical, pad.left, pad.top, w - pad.left - pad.right, h - pad.top - pad.bottom, min, max, '#ffd36b');
+  drawPlotFrame(ctx, { w, h, pad, title: 'Heatmap cuts', xLabel: sweep.yParam ? `${labelForParam(sweep.xParam)} / ${labelForParam(sweep.yParam)}` : labelForParam(sweep.xParam), yLabel: labelForMetric(metric), xValues: sweep.xValues, yValues: [min, max] });
+  ctx.fillStyle = '#dceeff'; ctx.font = '13px system-ui';
+  const hLabel = sweep.yParam ? `${labelForParam(sweep.yParam)}=${format(sweep.yValues[cutYi],4)}` : '1D sweep';
+  ctx.fillStyle = '#66e3ff'; ctx.fillText(`Horizontal cut: ${hLabel}`, pad.left + 12, 22);
+  if (sweep.yParam) { ctx.fillStyle = '#ffd36b'; ctx.fillText(`Vertical cut: ${labelForParam(sweep.xParam)}=${format(sweep.xValues[cutXi],4)}`, pad.left + 260, 22); }
 }
 
 function drawLineSeries(ctx, xs, ys, x0, y0, width, height, minY, maxY, color) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
-  ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 1;
-  for (let i=0;i<=4;i++){ const y=y0+height*i/4; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x0+width,y); ctx.stroke(); }
   ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath();
   ys.forEach((v, i) => {
     const px = x0 + (maxX === minX ? .5 : (xs[i]-minX)/(maxX-minX)) * width;
@@ -370,13 +375,52 @@ function drawLineSeries(ctx, xs, ys, x0, y0, width, height, minY, maxY, color) {
     i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
   });
   ctx.stroke();
+  ctx.fillStyle = color;
+  ys.forEach((v, i) => {
+    const px = x0 + (maxX === minX ? .5 : (xs[i]-minX)/(maxX-minX)) * width;
+    const py = y0 + height - (maxY === minY ? .5 : (v-minY)/(maxY-minY)) * height;
+    ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+  });
 }
 
-function drawSweepAxes(ctx, canvas, xLabel, yLabel, title) {
-  const w = canvas.width, h = canvas.height, pad = 58;
-  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1; ctx.strokeRect(pad, pad, w - 2*pad, h - 2*pad);
-  ctx.fillStyle = '#dceeff'; ctx.font = '14px system-ui'; ctx.fillText(title, pad, 28); ctx.fillText(xLabel, w / 2 - 50, h - 15);
-  ctx.save(); ctx.translate(18, h / 2 + 50); ctx.rotate(-Math.PI/2); ctx.fillText(yLabel, 0, 0); ctx.restore();
+function drawPlotFrame(ctx, cfg) {
+  const { w, h, pad, title, xLabel, yLabel, xValues, yValues } = cfg;
+  const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.25; ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.fillStyle = '#9fb4ca'; ctx.font = '12px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let i=0; i<=4; i++) {
+    const x = pad.left + plotW * i / 4;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    const tick = interpolateTick(xValues, i / 4); ctx.fillText(format(tick, 4), x, pad.top + plotH + 8);
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0; i<=4; i++) {
+    const y = pad.top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+    const tick = interpolateTick(yValues, 1 - i / 4); ctx.fillText(format(tick, 4), pad.left - 10, y);
+  }
+  ctx.fillStyle = '#eef6ff'; ctx.font = '700 15px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(title, pad.left, 28);
+  ctx.font = '13px system-ui'; ctx.textAlign = 'center'; ctx.fillText(xLabel, pad.left + plotW / 2, h - 18);
+  ctx.save(); ctx.translate(20, pad.top + plotH / 2); ctx.rotate(-Math.PI/2); ctx.fillText(yLabel, 0, 0); ctx.restore();
+  ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+}
+
+function drawColorbar(ctx, x, y, width, height, min, max, label) {
+  const gradient = ctx.createLinearGradient(0, y + height, 0, y);
+  for (let i = 0; i <= 1; i += 0.05) gradient.addColorStop(i, colorFor(min + (max - min) * i, min, max));
+  ctx.fillStyle = gradient; ctx.fillRect(x, y, width, height);
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.strokeRect(x, y, width, height);
+  ctx.fillStyle = '#dceeff'; ctx.font = '12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  for (let i=0; i<=4; i++) {
+    const yy = y + height * i / 4; const val = max - (max - min) * i / 4;
+    ctx.fillText(format(val, 3), x + width + 8, yy);
+  }
+  ctx.save(); ctx.translate(x + width + 54, y + height / 2); ctx.rotate(-Math.PI/2); ctx.textAlign = 'center'; ctx.fillText(label, 0, 0); ctx.restore();
+}
+
+function interpolateTick(values, fraction) {
+  if (!values.length) return 0;
+  return Math.min(...values) + (Math.max(...values) - Math.min(...values)) * fraction;
 }
 
 function labelForParam(param) {
