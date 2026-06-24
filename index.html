@@ -64,6 +64,23 @@
         <article><span>Total edge σ</span><strong id="totalSigma">—</strong></article>
         <article><span>Al diffusion coefficient</span><strong id="diffCoeff">—</strong></article>
       </div>
+      <div class="definitions">
+        <h3>How fitted outputs are calculated</h3>
+        <dl>
+          <dt>FWHM linewidth</dt>
+          <dd>Distance between the left and right centerline-profile crossings at 50% of peak normalized thickness.</dd>
+          <dt>10–90% edge width</dt>
+          <dd>Distance along the leading edge between the 10% and 90% normalized-thickness crossings; smaller values indicate sharper edges.</dd>
+          <dt>Geometric blur σ</dt>
+          <dd>Estimated standard deviation of the finite-source penumbra: mask-substrate gap × source diameter ÷ source-mask gap, converted from full blur to σ by dividing by 2.355.</dd>
+          <dt>Diffusion blur σ</dt>
+          <dd>Half of the Arrhenius diffusion length √(4Dτ), where D = D₀ exp(−Eₐ/kBT) and τ is scaled by deposition time and sticking.</dd>
+          <dt>Total edge σ</dt>
+          <dd>Quadrature combination of geometric and diffusion blur, with a small source-temperature flux-energy correction.</dd>
+          <dt>Al diffusion coefficient</dt>
+          <dd>Arrhenius diffusion coefficient for the selected substrate preset at the current substrate temperature.</dd>
+        </dl>
+      </div>
       <p class="caution"><strong>Calibration note:</strong> use experimental profiles to tune activation energy, prefactor, residence time, sticking, and source angular distribution. The simulator is intended for corroboration and sensitivity analysis, not as a substitute for direct metrology.</p>
     </section>
   </main>
