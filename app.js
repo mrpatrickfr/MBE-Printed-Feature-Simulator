@@ -15,7 +15,7 @@ const controls = [
   ['sourceMaskGap', 'Source-to-mask gap', 'mm', 20, 250, 1, 'Longer source distance reduces angular spread from the aperture.'],
   ['maskSubstrateGap', 'Mask-to-substrate gap', 'µm', 0, 250, 1, 'The key geometric lever for under-mask broadening.'],
   ['maskDiameter', 'Shadow-mask aperture diameter', 'µm', 1, 100, 0.5, 'Nominal printed feature diameter before blur.'],
-  ['substrateTemp', 'Substrate temperature', '°C', 20, 500, 1, 'Controls thermally activated surface diffusion.'],
+  ['substrateTemp', 'Substrate temperature', '°C', -196, 500, 1, 'Controls thermally activated surface diffusion; minimum is liquid nitrogen temperature.'],
   ['sourceTemp', 'Source temperature', '°C', 900, 1300, 5, 'Affects flux weighting weakly here once deposition rate is fixed.'],
   ['depositionTime', 'Residence / deposition time', 's', 1, 300, 1, 'Effective time available for adatoms to diffuse before burial or desorption.'],
   ['sticking', 'Sticking coefficient', '', 0.1, 1, 0.01, 'Scales thickness; low sticking slightly increases effective diffusion distance.']
