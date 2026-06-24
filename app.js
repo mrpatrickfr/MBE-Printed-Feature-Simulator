@@ -104,7 +104,10 @@ function drawMorphology(profile) {
   const c = document.getElementById('morphology'), ctx = c.getContext('2d'), w = c.width, h = c.height;
   ctx.clearRect(0,0,w,h);
   const pad = { left: 72, right: 96, top: 50, bottom: 58 };
-  const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
+  const plotSize = Math.min(w - pad.left - pad.right, h - pad.top - pad.bottom);
+  pad.right = w - pad.left - plotSize;
+  pad.bottom = h - pad.top - plotSize;
+  const plotW = plotSize, plotH = plotSize;
   const img = ctx.createImageData(plotW, plotH);
   const spanUm = Math.max(state.maskDiameter * 1.8, state.maskDiameter + 10 * profile.sigma, 30);
   for (let y=0; y<plotH; y++) for (let x=0; x<plotW; x++) {
@@ -117,7 +120,7 @@ function drawMorphology(profile) {
   ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.setLineDash([6,6]); ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(pad.left + plotW/2, pad.top + plotH/2, (state.maskDiameter / spanUm) * plotW / 2, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
   drawPlotFrame(ctx, { w, h, pad, title: 'Simulated morphology', xLabel: 'x position (µm)', yLabel: 'y position (µm)', xValues: [-spanUm/2, spanUm/2], yValues: [-spanUm/2, spanUm/2] });
-  drawColorbar(ctx, w - 88, pad.top, 16, plotH, 0, 1, 'Normalized thickness');
+  drawColorbar(ctx, pad.left + plotW + 18, pad.top, 16, plotH, 0, 1, 'Normalized thickness');
   ctx.fillStyle='rgba(255,255,255,.82)'; ctx.font='12px system-ui'; ctx.textAlign='left'; ctx.fillText('Dashed circle: nominal aperture', pad.left + 10, pad.top + 20);
 }
 function radialValue(r, sigma, radius) { return Math.max(0, Math.min(1, 0.5*(1-erf((r-radius)/(Math.SQRT2*sigma))))); }
