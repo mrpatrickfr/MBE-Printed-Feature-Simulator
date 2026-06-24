@@ -12,8 +12,8 @@ let state = { ...defaults };
 
 const controls = [
   ['sourceDiameter', 'Source aperture diameter', 'mm', 1, 50, 0.5, 'Finite source size drives geometric penumbra at the substrate.'],
-  ['sourceMaskGap', 'Source-to-mask gap', 'mm', 20, 250, 1, 'Longer source distance reduces angular spread from the aperture.'],
-  ['maskSubstrateGap', 'Mask-to-substrate gap', 'µm', 0, 250, 1, 'The key geometric lever for under-mask broadening.'],
+  ['sourceMaskGap', 'Source-to-mask gap', 'mm', 0, 250, 1, 'Longer source distance reduces angular spread from the aperture; zero is allowed for stress testing.'],
+  ['maskSubstrateGap', 'Mask-to-substrate gap', 'µm', 0, 5000, 1, 'The key geometric lever for under-mask broadening; maximum is 5 mm.'],
   ['maskDiameter', 'Shadow-mask aperture diameter', 'µm', 1, 100, 0.5, 'Nominal printed feature diameter before blur.'],
   ['substrateTemp', 'Substrate temperature', '°C', -196, 500, 1, 'Controls thermally activated surface diffusion; minimum is liquid nitrogen temperature.'],
   ['sourceTemp', 'Source temperature', '°C', 900, 1300, 5, 'Affects flux weighting weakly here once deposition rate is fixed.'],
@@ -70,7 +70,8 @@ function diffusionSigmaUm() {
 
 function simulateProfile() {
   const radius = state.maskDiameter / 2;
-  const geomFull = state.maskSubstrateGap * (state.sourceDiameter / (state.sourceMaskGap * 1000));
+  const sourceMaskGapUm = Math.max(state.sourceMaskGap * 1000, 1e-6);
+  const geomFull = state.maskSubstrateGap * (state.sourceDiameter / sourceMaskGapUm);
   const geomSigma = geomFull / 2.355;
   const diff = diffusionSigmaUm();
   const sourceBoost = 1 + 0.00018 * (state.sourceTemp - 1100); // modest flux-energy proxy
