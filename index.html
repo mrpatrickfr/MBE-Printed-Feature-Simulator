@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini‑MBE Printed Feature Simulator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Shadow-mask evaporation model</p>
+      <h1>Mini‑MBE Printed Feature Simulator</h1>
+      <p class="lede">Explore whether geometric penumbra or surface diffusion dominates printed linewidth and edge sharpness for aluminum deposited through micron-scale masks.</p>
+    </div>
+    <div class="hero-card">
+      <span class="metric-label">Dominant blur</span>
+      <strong id="dominantBlur">—</strong>
+      <small id="dominantNote">Adjust parameters to simulate</small>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls" aria-label="Simulation controls">
+      <div class="panel-heading">
+        <h2>Process parameters</h2>
+        <button id="resetBtn" type="button">Reset defaults</button>
+      </div>
+
+      <div class="control-grid" id="controls"></div>
+
+      <details open>
+        <summary>Model assumptions</summary>
+        <ul>
+          <li>Finite circular source and mask-substrate gap produce a geometric penumbra.</li>
+          <li>Atoms are emitted with a cosine-weighted angular distribution from the source aperture.</li>
+          <li>Surface diffusion is modeled as a Gaussian convolution with diffusion length √(4Dτ).</li>
+          <li>Diffusion coefficients use an Arrhenius law with editable material presets.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="panel visualizer">
+      <div class="panel-heading">
+        <div>
+          <h2>Simulated deposited morphology</h2>
+          <p>Height map and centerline profile are normalized to peak thickness.</p>
+        </div>
+        <div class="actions"><button id="exportBtn" type="button">Export profile CSV</button><button id="exportFitBtn" type="button">Export fitted parameters</button><button id="exportMorphologyPlotBtn" type="button">Export morphology PNG</button><button id="exportProfilePlotBtn" type="button">Export profile PNG</button></div>
+      </div>
+      <canvas id="morphology" width="760" height="430" aria-label="Simulated morphology heatmap"></canvas>
+      <div class="chart-wrap">
+        <canvas id="profile" width="760" height="260" aria-label="Line profile chart"></canvas>
+      </div>
+    </section>
+
+
+    <section class="panel sweep-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Parameter sweep explorer</h2>
+          <p>Sweep one or two parameters, plot a selected fitted output, inspect horizontal/vertical cuts, and export the full result table.</p>
+        </div>
+        <div class="actions"><button id="runSweepBtn" type="button">Run sweep</button><button id="exportSweepBtn" type="button">Export sweep CSV</button></div>
+      </div>
+      <div class="sweep-sections">
+        <fieldset class="sweep-group">
+          <legend>Sweep inputs</legend>
+          <div class="sweep-controls sweep-inputs">
+            <label>Sweep X parameter<select id="sweepXParam"></select></label>
+            <label>Start<input id="sweepXStart" type="number" step="any" /></label>
+            <label>Stop<input id="sweepXStop" type="number" step="any" /></label>
+            <label>Step<input id="sweepXStep" type="number" step="any" min="0" /></label>
+            <label>Sweep Y parameter<select id="sweepYParam"><option value="">None — 1D sweep</option></select></label>
+            <label>Start<input id="sweepYStart" type="number" step="any" /></label>
+            <label>Stop<input id="sweepYStop" type="number" step="any" /></label>
+            <label>Step<input id="sweepYStep" type="number" step="any" min="0" /></label>
+          </div>
+        </fieldset>
+        <fieldset class="sweep-group plot-group">
+          <legend>Plot after sweep</legend>
+          <div class="sweep-controls plot-controls">
+            <label>Heat / plot value<select id="sweepMetric"></select></label>
+            <label class="check-row"><input id="showHorizontalCut" type="checkbox" checked /> Show horizontal cut</label>
+            <label>Horizontal cut Y<select id="cutYSelect"></select></label>
+            <label class="check-row"><input id="showVerticalCut" type="checkbox" checked /> Show vertical cut</label>
+            <label>Vertical cut X<select id="cutXSelect"></select></label>
+            <button id="exportSweepPlotBtn" type="button">Export heat/line PNG</button>
+            <button id="exportCutPlotBtn" type="button">Export cuts PNG</button>
+          </div>
+        </fieldset>
+      </div>
+      <p id="sweepStatus" class="sweep-status">Run a sweep to generate plotted results.</p>
+      <canvas id="sweepHeatmap" width="760" height="390" aria-label="Sweep heatmap or 1D sweep plot"></canvas>
+      <div class="chart-wrap">
+        <canvas id="sweepCuts" width="760" height="240" aria-label="Horizontal and vertical sweep cuts"></canvas>
+      </div>
+    </section>
+
+    <section class="panel readout">
+      <h2>Fit-style outputs</h2>
+      <div class="cards">
+        <article><span>FWHM linewidth</span><strong id="fwhm">—</strong></article>
+        <article><span>10–90% edge width</span><strong id="edgeWidth">—</strong></article>
+        <article><span>Geometric blur σ</span><strong id="geomSigma">—</strong></article>
+        <article><span>Diffusion blur σ</span><strong id="diffSigma">—</strong></article>
+        <article><span>Total edge σ</span><strong id="totalSigma">—</strong></article>
+        <article><span>Al diffusion coefficient</span><strong id="diffCoeff">—</strong></article>
+      </div>
+      <div class="definitions">
+        <h3>How fitted outputs are calculated</h3>
+        <dl>
+          <dt>FWHM linewidth</dt>
+          <dd>Distance between the left and right centerline-profile crossings at 50% of peak normalized thickness.</dd>
+          <dt>10–90% edge width</dt>
+          <dd>Distance along the leading edge between the 10% and 90% normalized-thickness crossings; smaller values indicate sharper edges.</dd>
+          <dt>Geometric blur σ</dt>
+          <dd>Estimated standard deviation of the finite-source penumbra: mask-substrate gap × source diameter ÷ source-mask gap, converted from full blur to σ by dividing by 2.355.</dd>
+          <dt>Diffusion blur σ</dt>
+          <dd>Half of the Arrhenius diffusion length √(4Dτ), where D = D₀ exp(−Eₐ/kBT) and τ is scaled by deposition time and sticking.</dd>
+          <dt>Total edge σ</dt>
+          <dd>Quadrature combination of geometric and diffusion blur, with a small source-temperature flux-energy correction.</dd>
+          <dt>Al diffusion coefficient</dt>
+          <dd>Arrhenius diffusion coefficient for the selected substrate preset at the current substrate temperature.</dd>
+        </dl>
+      </div>
+      <p class="caution"><strong>Calibration note:</strong> use experimental profiles to tune activation energy, prefactor, residence time, sticking, and source angular distribution. The simulator is intended for corroboration and sensitivity analysis, not as a substitute for direct metrology.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
